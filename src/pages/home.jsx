@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import AuthModal from "./AuthModal";
+import AuthModal from "./authModal";
 
 function Home() {
   const [secrets, setSecrets] = useState([]);
