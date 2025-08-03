@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
 
-function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
-  const [formType, setFormType] = useState(initialForm);
+function AuthModal({ isOpen, onClose, formType, onToggleForm, onAuthSuccess }) {
   const [formData, setFormData] = useState({
     f_name: "",
     l_name: "",
@@ -14,8 +13,8 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const toggleForm = () => {
-    setFormType((prev) => (prev === "login" ? "signup" : "login"));
+  // reset when form type changes (e.g., parent switched between login/signup)
+  useEffect(() => {
     setError("");
     setFormData({
       f_name: "",
@@ -25,16 +24,14 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
       phone_number: "",
       address: "",
     });
-  };
+  }, [formType]);
 
   if (!isOpen) return null;
 
-  // 🟡 Handle input changes
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // 🔵 Signup handler
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -43,7 +40,7 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
       const res = await api.post("/users/signup", formData);
       console.log("Signup success:", res.data);
       alert("Signup successful!");
-      setFormType("login");
+      onToggleForm("login"); // switch to login after successful signup
     } catch (err) {
       const message =
         err.response?.data?.message || "Signup failed. Please try again.";
@@ -53,9 +50,7 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
     }
   };
 
-  // 🔴 Login handler
   const handleLogin = async (e) => {
-    console.log("Login data:", formData);
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -65,17 +60,12 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
         password: formData.password,
       });
 
-      // Destructure both `user` and `token` from the response
       const { token, user } = res.data;
 
-      // ✅ Store the token correctly
       localStorage.setItem("token", token);
-
-      // (Optional) Store user info if needed
       localStorage.setItem("user", JSON.stringify(user));
 
       onAuthSuccess(token);
-      // Close the modal or redirect as needed
       onClose();
     } catch (err) {
       const message =
@@ -85,6 +75,10 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleFormLocal = () => {
+    onToggleForm(formType === "login" ? "signup" : "login");
   };
 
   return (
@@ -101,17 +95,14 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
           {formType === "login" ? "Login" : "Sign Up"}
         </h2>
 
-        {/* 🔴 Error Message */}
         {error && (
           <p className="text-red-500 text-sm mb-2 text-center">{error}</p>
         )}
 
-        {/* 🔄 FORM */}
         <form
           className="space-y-4"
           onSubmit={formType === "login" ? handleLogin : handleSignup}
         >
-          {/* 🟡 Extra fields for Signup */}
           {formType === "signup" && (
             <>
               <input
@@ -153,7 +144,6 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
             </>
           )}
 
-          {/* 🔵 Common fields */}
           <input
             type="email"
             name="email"
@@ -188,13 +178,12 @@ function AuthModal({ isOpen, onClose, initialForm, onAuthSuccess }) {
           </button>
         </form>
 
-        {/* 🔄 TOGGLE FORM */}
         <p className="mt-4 text-sm text-center text-gray-600">
           {formType === "login"
             ? "Don't have an account?"
             : "Already have an account?"}{" "}
           <button
-            onClick={toggleForm}
+            onClick={toggleFormLocal}
             className="text-pink-600 hover:underline font-medium"
           >
             {formType === "login" ? "Sign up" : "Log in"}

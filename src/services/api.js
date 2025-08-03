@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
+  baseURL: "https://secrets-backend-n1f6.onrender.com/api/v1",
 });
-
 export default api;
